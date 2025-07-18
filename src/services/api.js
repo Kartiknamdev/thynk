@@ -1,4 +1,6 @@
 // src/services/api.js
+
+import { mockPassages } from './mockData';
 const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const AI_MODEL = 'gpt-3.5-turbo';
 
@@ -21,8 +23,11 @@ export const generatePassage = async (settings) => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error generating passage:', error);
-    throw error;
+    // Fallback to random mock passage
+    console.warn('Falling back to mock passage:', error);
+    const random = Math.floor(Math.random() * mockPassages.length);
+    // Return in the same format as API: { passage: string }
+    return { passage: mockPassages[random].content, questions: mockPassages[random].questions };
   }
 };
 
@@ -45,7 +50,14 @@ export const generateQuestions = async (passage) => {
 
     return await response.json();
   } catch (error) {
-    console.error('Error generating questions:', error);
-    throw error;
+    // Fallback: find the mock passage matching the content
+    console.warn('Falling back to mock questions:', error);
+    const found = mockPassages.find(p => p.content === passage);
+    if (found) {
+      return { questions: found.questions };
+    } else {
+      // fallback to first mock passage's questions
+      return { questions: mockPassages[0].questions };
+    }
   }
 };

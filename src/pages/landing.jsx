@@ -4,6 +4,7 @@ import { FaBookOpen, FaExchangeAlt, FaVolumeUp, FaChartLine } from 'react-icons/
 import { useTheme } from '../context/ThemeContext';
 // import ThemeToggle from '../components/ThemeToggle';
 import ThemeSwitcher from '../components/ThemeSwitcher';
+import ThemeToggle from '../components/ThemeToggle';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -186,6 +187,8 @@ export default function LandingPage() {
           <p className="mt-1">Made with <span className="text-pink-500">♥</span> for learners.</p>
         </footer>
       </motion.div>
+      {/* Theme toggle floating button */}
+      <ThemeToggle />
     </div>
   );
 }
