@@ -42,7 +42,7 @@ export default function HomePage() {
       >
         <div className="text-center relative">
           <h1 className="text-5xl font-bold bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent animate-gradient pb-2">
-            Thinkore
+            Thynk!
           </h1>
           <p className="mt-4 text-lg text-gray-600 dark:text-gray-300 font-medium">
             Practice Reading Comprehension for Company Aptitude Tests

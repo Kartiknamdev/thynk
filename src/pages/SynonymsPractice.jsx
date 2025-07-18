@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
@@ -13,6 +13,9 @@ export default function SynonymsPractice() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quizType, setQuizType] = useState('synonyms'); // 'synonyms' or 'antonyms'
+  const [autoNext, setAutoNext] = useState(true);
+  const autoNextTimeout = useRef(null);
+  const [countdown, setCountdown] = useState(5); // seconds left before next question
   
   const settings = location.state || {
     difficulty: "Easy",
@@ -105,7 +108,6 @@ export default function SynonymsPractice() {
   const handleAnswerSelect = (index) => {
     if (selectedAnswer !== null) return;
     setSelectedAnswer(index);
-    
     const isCorrect = index === currentQuestion.correctAnswer;
     setAnswers([...answers, {
       questionId: currentQuestion.id,
@@ -115,14 +117,23 @@ export default function SynonymsPractice() {
       isCorrect,
       type: currentQuestion.type
     }]);
-    
     setShowExplanation(true);
+    if (autoNext) {
+      setCountdown(5);
+      autoNextTimeout.current = setTimeout(() => {
+        handleNextQuestion();
+      }, 5000);
+    }
   };
 
   const handleNextQuestion = () => {
+    if (autoNextTimeout.current) {
+      clearTimeout(autoNextTimeout.current);
+      autoNextTimeout.current = null;
+    }
+    setCountdown(5);
     setSelectedAnswer(null);
     setShowExplanation(false);
-    
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
@@ -130,6 +141,41 @@ export default function SynonymsPractice() {
       navigate('/synonyms-results', { state: { answers, settings } });
     }
   };
+  // Clear timeout on unmount or question change
+  useEffect(() => {
+    return () => {
+      if (autoNextTimeout.current) {
+        clearTimeout(autoNextTimeout.current);
+      }
+    };
+  }, []);
+
+  // Clear timeout if question changes or answer is reset
+  useEffect(() => {
+    if (selectedAnswer === null && autoNextTimeout.current) {
+      clearTimeout(autoNextTimeout.current);
+      autoNextTimeout.current = null;
+    }
+    setCountdown(5);
+    // eslint-disable-next-line
+  }, [currentQuestionIndex]);
+
+  // Countdown effect for auto-next
+  useEffect(() => {
+    if (autoNext && showExplanation && selectedAnswer !== null) {
+      setCountdown(5);
+      const interval = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev > 1) return prev - 1;
+          clearInterval(interval);
+          return 1;
+        });
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      setCountdown(5);
+    }
+  }, [autoNext, showExplanation, selectedAnswer]);
 
   const toggleQuizType = () => {
     setQuizType(quizType === 'synonyms' ? 'antonyms' : 'synonyms');
@@ -165,7 +211,7 @@ export default function SynonymsPractice() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col p-4 md:p-6">
+    <div className="min-h-screen flex flex-col p-2 sm:p-4 md:p-6 bg-gradient-to-br from-emerald-50/60 via-teal-50/60 to-emerald-100/40 dark:from-black/80 dark:via-black/90 dark:to-black/80">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <button
@@ -195,16 +241,44 @@ export default function SynonymsPractice() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="w-full max-w-2xl p-6 md:p-8 rounded-2xl
-            bg-gradient-to-br from-white/20 to-white/10 dark:from-black/20 dark:to-black/10 
-            backdrop-blur-xl border border-white/20 dark:border-white/10 
-            shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.25)]"
+          className="w-full max-w-2xl p-4 sm:p-6 md:p-10 relative rounded-[2.5rem] overflow-hidden shadow-2xl"
+          style={{
+            background: 'linear-gradient(120deg, rgba(255,255,255,0.18) 60%, rgba(255,255,255,0.10) 100%)',
+            backdropFilter: 'blur(28px)',
+            WebkitBackdropFilter: 'blur(28px)',
+            border: '1.5px solid rgba(255,255,255,0.18)',
+            boxShadow: '0 8px 40px 0 rgba(0,0,0,0.18), 0 0 0 1.5px rgba(255,255,255,0.10) inset',
+          }}
         >
+          {/* Liquid glass highlight overlay */}
+          <div className="pointer-events-none absolute inset-0 z-10">
+            <div className="absolute top-0 left-0 w-full h-1/2 bg-white/30 rounded-t-[2.5rem] blur-[10px] opacity-40" style={{ WebkitMaskImage: 'linear-gradient(to bottom, white 60%, transparent 100%)' }} />
+            <div className="absolute bottom-0 right-0 w-2/3 h-1/3 bg-white/10 rounded-b-[2.5rem] blur-[12px] opacity-20" style={{ WebkitMaskImage: 'linear-gradient(to top, white 60%, transparent 100%)' }} />
+            <div className="absolute inset-0 rounded-[2.5rem] pointer-events-none z-20" style={{ boxShadow: '0 0 32px 8px rgba(0,0,0,0.10) inset, 0 0 0 2px rgba(255,255,255,0.10) inset' }} />
+          </div>
           {currentQuestion && (
-            <div className="space-y-6">
+            <div className="space-y-8 relative z-20">
+              {/* Auto next toggle and timer */}
+              <div className="flex items-center justify-between mb-2">
+                <label className="flex items-center gap-2 cursor-pointer select-none text-base font-medium text-emerald-700 dark:text-emerald-200">
+                  <input
+                    type="checkbox"
+                    checked={autoNext}
+                    onChange={e => setAutoNext(e.target.checked)}
+                    className="accent-emerald-500 w-5 h-5 rounded"
+                  />
+                  Auto next after answer
+                </label>
+                {autoNext && showExplanation && selectedAnswer !== null && (
+                  <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-200 text-base font-semibold animate-pulse">
+                    <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/><path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <span>Next in {countdown}s</span>
+                  </div>
+                )}
+              </div>
               {/* Question Type Badge */}
               <div className="flex justify-between items-center">
-                <div className={`px-3 py-1 text-sm font-medium rounded-full ${
+                <div className={`px-4 py-1 text-base font-semibold rounded-full tracking-wide shadow-sm ${
                   currentQuestion.type === 'synonym' 
                     ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200'
                     : 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
@@ -215,16 +289,16 @@ export default function SynonymsPractice() {
               
               {/* Question */}
               <div className="text-center">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-800 dark:text-white mb-1">
+                <h2 className="text-3xl sm:text-4xl font-extrabold text-emerald-800 dark:text-emerald-200 mb-2 drop-shadow">
                   {currentQuestion.word}
                 </h2>
-                <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base">
+                <p className="text-emerald-700 dark:text-emerald-200 text-base sm:text-lg font-medium">
                   Select the {currentQuestion.type === 'synonym' ? 'synonym' : 'antonym'} for this word
                 </p>
               </div>
 
               {/* Options */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {currentQuestion.options.map((option, index) => (
                   <motion.button
                     key={index}
@@ -232,24 +306,25 @@ export default function SynonymsPractice() {
                     disabled={selectedAnswer !== null}
                     whileHover={selectedAnswer === null ? { scale: 1.02 } : {}}
                     whileTap={selectedAnswer === null ? { scale: 0.98 } : {}}
-                    className={`p-4 rounded-xl font-medium text-left transition-all duration-300 ${
-                      selectedAnswer === null
-                        ? 'bg-white/20 dark:bg-black/20 hover:bg-white/30 dark:hover:bg-black/30 text-gray-800 dark:text-white'
-                        : selectedAnswer === index
+                    className={`p-5 rounded-2xl font-semibold text-left transition-all duration-300 text-lg sm:text-xl shadow-md
+                      ${
+                        selectedAnswer === null
+                          ? 'bg-emerald-50/80 dark:bg-black/20 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/30 text-emerald-900 dark:text-emerald-100'
+                          : selectedAnswer === index
                           ? index === currentQuestion.correctAnswer
                             ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 border-green-500'
                             : 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 border-red-500'
                           : index === currentQuestion.correctAnswer && showExplanation
                             ? 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200'
-                            : 'bg-white/10 dark:bg-black/10 text-gray-500 dark:text-gray-400'
-                    }
+                            : 'bg-emerald-50/60 dark:bg-black/10 text-gray-400 dark:text-gray-500'
+                      }
                     border border-white/20 dark:border-white/10 ${
                       (selectedAnswer === index || (index === currentQuestion.correctAnswer && showExplanation))
                         ? 'border-2' : ''
                     }`}
                   >
                     <div className="flex items-center">
-                      <span className="w-7 h-7 rounded-full bg-white/30 dark:bg-black/30 flex items-center justify-center mr-3 text-sm">
+                      <span className="w-8 h-8 rounded-full bg-emerald-200/70 dark:bg-emerald-900/40 flex items-center justify-center mr-4 text-base font-bold">
                         {String.fromCharCode(65 + index)}
                       </span>
                       {option}
@@ -264,10 +339,10 @@ export default function SynonymsPractice() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   transition={{ duration: 0.3 }}
-                  className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-800"
+                  className="p-5 rounded-2xl bg-gradient-to-r from-emerald-50/80 to-teal-50/80 dark:from-emerald-900/30 dark:to-teal-900/30 border border-emerald-200 dark:border-emerald-800 mt-2"
                 >
-                  <h3 className="font-semibold text-emerald-800 dark:text-emerald-300 mb-1">Explanation:</h3>
-                  <p className="text-gray-700 dark:text-gray-300">
+                  <h3 className="font-bold text-emerald-800 dark:text-emerald-200 mb-2 text-lg">Explanation:</h3>
+                  <p className="text-emerald-900 dark:text-emerald-100 text-base">
                     {currentQuestion.explanation}
                   </p>
                 </motion.div>

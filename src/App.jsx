@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import ThemeSwitcher from './components/ThemeSwitcher';
 import LandingPage from './pages/landing';
+import Features from './pages/Features';
+import About from './pages/About';
 import ReadingSettings from './pages/ReadingSettings';
 import PracticePage from './pages/PracticePage';
 import ResultsPage from './pages/ResultsPage';
@@ -36,6 +38,8 @@ function AppContent() {
           {/* Coming soon routes */}
           <Route path="/vocabulary" element={<ComingSoon title="Vocabulary Builder" />} />
           <Route path="/analytics" element={<ComingSoon title="Performance Analytics" />} />
+          <Route path="/features" element={<Features />} />
+          <Route path="/about" element={<About />} />
         </Routes>
       </Router>
     </div>
