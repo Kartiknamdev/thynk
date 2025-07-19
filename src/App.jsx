@@ -10,6 +10,7 @@ import ResultsPage from './pages/ResultsPage';
 import SynonymsSettings from './pages/SynonymsSettings';
 import SynonymsPractice from './pages/SynonymsPractice';
 import SynonymsResults from './pages/SynonymsResults';
+import VocabularyBuilder from './pages/VocabularyBuilder';
 import ComingSoon from './components/ComingSoon';
 import './App.css';
 
@@ -35,8 +36,8 @@ function AppContent() {
           {/* Legacy route - redirect to settings page */}
           <Route path="/synonyms" element={<SynonymsSettings />} />
           
-          {/* Coming soon routes */}
-          <Route path="/vocabulary" element={<ComingSoon title="Vocabulary Builder" />} />
+          {/* Vocabulary Builder */}
+          <Route path="/vocabulary" element={<VocabularyBuilder />} />
           <Route path="/analytics" element={<ComingSoon title="Performance Analytics" />} />
           <Route path="/features" element={<Features />} />
           <Route path="/about" element={<About />} />

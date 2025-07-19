@@ -36,7 +36,7 @@ export default function LandingPage() {
       icon: <FaVolumeUp className="text-3xl" />,
       color: 'from-purple-500 to-violet-600',
       path: '/vocabulary',
-      ready: false
+      ready: true
     },
     {
       id: 'progress',
